@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF RAG Chatbot - Project Guide, Architecture & Viva Q&A</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap');
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #0f172a;
+      --text: #334155;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --accent: #0284c7;
+      --tag-bg: #e0f2fe;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 50px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--secondary);
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 26px;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 19px;
+      margin-top: 36px;
+      margin-bottom: 14px;
+      color: var(--primary-dark);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    p, li {
+      font-size: 14.5px;
+      margin-bottom: 10px;
+    }
+
+    ul, ol {
+      padding-left: 22px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--tag-bg);
+      color: var(--accent);
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .highlight-box {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 6px;
+      margin: 18px 0;
+    }
+
+    pre, code {
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+    }
+
+    pre {
+      background: #1e293b;
+      color: #f1f5f9;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+
+    .qna-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+
+    .qna-card strong.question {
+      color: var(--secondary);
+      font-size: 15px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .qna-card p.answer {
+      color: #334155;
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 30px;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      z-index: 1000;
+    }
+
+    .print-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: white;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .print-btn {
+        display: none;
+      }
+      .qna-card {
+        page-break-inside: avoid;
+      }
+      h2 {
+        page-break-before: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Save as PDF / Print</button>
+
+  <div class="container">
+    <h1>📄 Complete Project Guide, Architecture & Viva Q&A</h1>
+    
+    <div style="margin-bottom: 20px;">
+      <span class="badge">Privacy-First RAG</span>
+      <span class="badge">Meta Llama 3</span>
+      <span class="badge">Nomic-Embed-Text</span>
+      <span class="badge">LangChain LCEL</span>
+      <span class="badge">FAISS Vector Search</span>
+      <span class="badge">Streamlit UI</span>
+    </div>
+
+    <!-- SECTION 1: PROJECT OVERVIEW -->
+    <h2>1. Project Overview & Information</h2>
+    <div class="highlight-box">
+      <strong>Project Title:</strong> Privacy-Preserving Conversational PDF Knowledge Assistant using Local Retrieval-Augmented Generation (RAG)<br>
+      <strong>Domain:</strong> Artificial Intelligence & Machine Learning (AIML) &bull; Natural Language Processing (NLP)<br>
+      <strong>Core Stack:</strong> Python, LangChain LCEL 0.2+, Ollama (Llama 3 & Nomic-Embed-Text), FAISS, Streamlit
+    </div>
+
+    <!-- SECTION 2: ARCHITECTURE & WORKFLOW -->
+    <h2>2. System Architecture & End-to-End Workflow</h2>
+    <pre>
+┌────────────────────────────────────────────────────────────────────────┐
+│                        STAGE 1: DOCUMENT INGESTION                     │
+│  [ Multiple PDFs ] ──> [ PyPDFLoader ] ──> [ Recursive Character Splitter ] │
+│                                                   (800 chunk, 100 overlap) │
+│                                                   │                        │
+│                                                   ▼                        │
+│  [ FAISS Vector DB ] <── [ OllamaEmbeddings (nomic-embed-text) ]          │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼────────────────────────────────────┐
+│                  STAGE 2: CONVERSATIONAL RETRIEVAL & QA                │
+│                                                                        │
+│  [ User Query ] + [ Chat History (Human + AI) ]                        │
+│         │                                                              │
+│         ▼                                                              │
+│  [ History-Aware Contextualizer (LCEL) ] ──> [ Standalone Search Query ] │
+│                                                   │                    │
+│                                                   ▼                    │
+│                                    [ FAISS Dense Similarity Search ]   │
+│                                                   │ (Top-K Chunks)     │
+│                                                   ▼                    │
+│  [ Grounded QA Prompt ] <────────────────── [ Retrieved Context ]      │
+│         │                                                              │
+│         ▼                                                              │
+│  [ ChatOllama (llama3) ] ──> [ Live Token Stream + Expandable Citations ]│
+└────────────────────────────────────────────────────────────────────────┘
+    </pre>
+
+    <!-- SECTION 3: STEP BY STEP WORKFLOW -->
+    <h2>3. Step-by-Step Data Workflow</h2>
+    <ol>
+      <li><strong>PDF Upload & Caching:</strong> User uploads PDFs in the sidebar. File signatures <code>(name, size)</code> are checked to prevent redundant re-indexing on UI reruns.</li>
+      <li><strong>Parsing & Metadata:</strong> <code>PyPDFLoader</code> extracts text page-by-page, attaching metadata (<code>source_name</code> and <code>page</code>).</li>
+      <li><strong>Semantic Splitting:</strong> <code>RecursiveCharacterTextSplitter</code> creates 800-character chunks with 100-character overlap to preserve boundary context.</li>
+      <li><strong>Vector Embedding:</strong> <code>nomic-embed-text</code> converts chunks into 768-dimensional dense vectors.</li>
+      <li><strong>FAISS Indexing:</strong> Vectors are stored in an in-memory index for millisecond similarity retrieval.</li>
+      <li><strong>History-Aware Query Reformulation:</strong> When follow-up questions are asked, LangChain's contextualizer converts pronouns into a standalone search query.</li>
+      <li><strong>Grounded Response Generation:</strong> Top-K chunks are injected into a strict system prompt and streamed token-by-token via Streamlit.</li>
+    </ol>
+
+    <!-- SECTION 4: FILE BREAKDOWN -->
+    <h2>4. File-by-File Breakdown ("What File Does What")</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File Path</th>
+          <th>Component</th>
+          <th>Functionality & Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>app.py</code></td>
+          <td>Frontend & Orchestrator</td>
+          <td>Streamlit dashboard, session state management, caching checks, model sliders, real-time token streaming, and citation rendering.</td>
+        </tr>
+        <tr>
+          <td><code>utils/ingest.py</code></td>
+          <td>Ingestion Engine</td>
+          <td><code>process_pdfs_to_vector_db()</code>: Loads multiple PDFs, splits text, computes embeddings via Ollama, and creates FAISS index.</td>
+        </tr>
+        <tr>
+          <td><code>utils/rag_chain.py</code></td>
+          <td>RAG Logic</td>
+          <td><code>get_conversational_rag_chain()</code>: LCEL history-aware retriever + grounded QA chain. <code>get_installed_ollama_models()</code>: Auto-detects local Ollama models.</td>
+        </tr>
+        <tr>
+          <td><code>requirements.txt</code></td>
+          <td>Dependencies</td>
+          <td>Specifies pinned versions for Streamlit, LangChain 0.2+, FAISS-CPU, PyPDF, and Ollama integration packages.</td>
+        </tr>
+        <tr>
+          <td><code>README.md</code></td>
+          <td>Documentation</td>
+          <td>Prerequisites, Ollama setup instructions, local run commands, and architecture diagrams.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- SECTION 5: VIVA QUESTIONS & ANSWERS -->
+    <h2>5. Top 25 Viva / Technical Interview Questions & Answers</h2>
+
+    <div class="qna-card">
+      <strong class="question">Q1: What is Retrieval-Augmented Generation (RAG) and why is it used over Fine-Tuning?</strong>
+      <p class="answer"><strong>Ans:</strong> RAG retrieves relevant document chunks from a vector database and injects them into the prompt of a frozen LLM at inference time. Unlike fine-tuning, RAG eliminates the risk of catastrophic forgetting, allows instant document updates without retraining, guarantees verifiable source citations, and costs zero training compute.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q2: Why use Ollama and local models instead of OpenAI/Cloud APIs?</strong>
+      <p class="answer"><strong>Ans:</strong> Local execution guarantees 100% data privacy (crucial for confidential medical, legal, and financial PDFs), eliminates recurring API token costs, and enables offline operation with zero internet dependency.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q3: What is the purpose of text chunking (chunk_size=800, chunk_overlap=100)?</strong>
+      <p class="answer"><strong>Ans:</strong> Embedding an entire 50-page document into a single vector averages out and loses fine-grained semantic detail. Chunking divides text into coherent paragraphs. The 100-character overlap prevents sentences and critical facts from being split across chunk boundaries.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q4: How does FAISS work and what distance metric does it use?</strong>
+      <p class="answer"><strong>Ans:</strong> FAISS (Facebook AI Similarity Search) is an optimized in-memory vector index that computes high-dimensional vector distances (Cosine Similarity / Euclidean L2 distance) to find the nearest document chunks to a user's query vector in milliseconds.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q5: What is the difference between `nomic-embed-text` and `llama3`?</strong>
+      <p class="answer"><strong>Ans:</strong> <code>nomic-embed-text</code> is a dedicated text embedding model that maps sentences into 768-dimensional coordinates. <code>llama3</code> is a generative autoregressive language model that reads the retrieved context and writes natural language answers.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q6: How does Multi-Turn Conversational Memory work in your project?</strong>
+      <p class="answer"><strong>Ans:</strong> We use LangChain's <code>create_history_aware_retriever</code>. When a user asks a follow-up query (e.g. <em>"What were his 3 main findings?"</em>), an LLM sub-chain evaluates the past chat history and reformulates the prompt into a standalone search query before querying FAISS.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q7: What is LangChain LCEL?</strong>
+      <p class="answer"><strong>Ans:</strong> LangChain Expression Language (LCEL) is a declarative, composable framework in LangChain 0.2+ that allows developers to assemble prompts, retrievers, and LLMs into production-ready chains with out-of-the-box streaming and batching support.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q8: How do you prevent LLM hallucinations?</strong>
+      <p class="answer"><strong>Ans:</strong> 1) Setting temperature to 0.0 for deterministic outputs; 2) Enforcing strict system prompt constraints (instructing the model to state "I don't know" if the answer is absent from context); 3) Displaying exact source page numbers and text snippets for verification.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q9: How does real-time token streaming work in Streamlit?</strong>
+      <p class="answer"><strong>Ans:</strong> <code>rag_chain.stream()</code> yields output tokens as a generator. Streamlit's <code>st.write_stream()</code> consumes this generator to display characters progressively with a typewriter effect, improving user experience by eliminating waiting time.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q10: Why is ingestion caching implemented?</strong>
+      <p class="answer"><strong>Ans:</strong> Streamlit re-executes the entire script whenever a user interacts with widgets. Ingestion caching stores a hash signature <code>(filename, filesize)</code> in <code>st.session_state</code>, preventing redundant and CPU-intensive re-embedding during chat conversations.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q11: What is the role of `pypdf`?</strong>
+      <p class="answer"><strong>Ans:</strong> <code>pypdf</code> is the underlying PDF parser used by <code>PyPDFLoader</code> to parse raw PDF streams, extract textual contents, and preserve page indices for metadata tracking.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q12: What is Top-K retrieval and how does changing it affect performance?</strong>
+      <p class="answer"><strong>Ans:</strong> Top-K controls how many relevant chunks are fetched from FAISS. If Top-K is too low (e.g., 1), necessary context may be omitted; if Top-K is too high (e.g., 10), irrelevant context can confuse the LLM and slow down inference.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q13: What is the temperature parameter in LLMs?</strong>
+      <p class="answer"><strong>Ans:</strong> Temperature scales the probability distribution (softmax logits) of next-token predictions. A temperature of 0.0 ensures greedy, factual decoding, while higher values (e.g. 0.8) introduce randomness.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q14: How are 1-indexed page numbers displayed?</strong>
+      <p class="answer"><strong>Ans:</strong> PDF libraries use 0-indexed page numbers (page 0 is page 1). In <code>app.py</code>, we add +1 to <code>metadata["page"]</code> before displaying citation cards in the UI.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q15: What happens if a scanned image PDF is uploaded?</strong>
+      <p class="answer"><strong>Ans:</strong> Text extraction returns empty because standard PDF parsers only extract digital text layers. An OCR engine (e.g., Tesseract, EasyOCR) is required to extract text from scanned images.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q16: How does the app auto-detect installed Ollama models?</strong>
+      <p class="answer"><strong>Ans:</strong> <code>get_installed_ollama_models()</code> sends an HTTP GET request to Ollama's local REST endpoint <code>http://localhost:11434/api/tags</code> and parses available model names dynamically into the UI dropdown.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q17: What is the "Stuff Documents" strategy in LangChain?</strong>
+      <p class="answer"><strong>Ans:</strong> It concatenates all retrieved document chunks into a single context string that fits directly into the prompt template for the LLM.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q18: How does this project handle multiple PDF files simultaneously?</strong>
+      <p class="answer"><strong>Ans:</strong> <code>process_pdfs_to_vector_db()</code> loops through all uploaded file paths, extracts chunks, stamps each chunk with <code>source_name</code>, and combines them all into a unified FAISS index.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q19: How can this system be scaled for enterprise use?</strong>
+      <p class="answer"><strong>Ans:</strong> By replacing in-memory FAISS with a persistent distributed vector database (e.g., Qdrant, Milvus, ChromaDB, or Pgvector) and implementing asynchronous background ingestion queues with Redis/Celery.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q20: What is Hybrid Search?</strong>
+      <p class="answer"><strong>Ans:</strong> A technique combining dense semantic vector search (embeddings) with sparse keyword search (BM25) to catch both high-level semantic intent and exact keyword matches (e.g. product IDs, legal clauses).</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q21: Can this application run completely offline?</strong>
+      <p class="answer"><strong>Ans:</strong> Yes. Once the Python dependencies and local Ollama model weights are installed, no network connection is needed.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q22: What are the primary hardware requirements?</strong>
+      <p class="answer"><strong>Ans:</strong> Minimum 8GB RAM (16GB recommended), multi-core CPU or NVIDIA GPU with 4GB+ VRAM, and ~5GB disk space for model weights.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q23: What is `MessagesPlaceholder` in LangChain?</strong>
+      <p class="answer"><strong>Ans:</strong> It is a prompt template element that dynamically injects the list of past message objects (HumanMessage and AIMessage) into the conversation history slot of the prompt.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q24: What are the main limitations of this project?</strong>
+      <p class="answer"><strong>Ans:</strong> 1) Requires consumer GPU/RAM for fast local inference; 2) Does not natively parse non-text scanned image PDFs without OCR; 3) FAISS index is in-memory per session.</p>
+    </div>
+
+    <div class="qna-card">
+      <strong class="question">Q25: What are the real-world applications of this project?</strong>
+      <p class="answer"><strong>Ans:</strong> Confidential legal case review, medical diagnostic report lookup, financial audit document exploration, enterprise HR policy assistants, and academic research analysis.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
