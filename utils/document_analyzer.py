@@ -3,11 +3,24 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 from langchain_core.documents import Document
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 
 
-def _get_fast_llm(model_name: str, temperature: float = 0.1) -> ChatOllama:
+def _get_fast_llm(model_name: str, temperature: float = 0.1, groq_api_key: Optional[str] = None):
+    api_key = groq_api_key or os.getenv("GROQ_API_KEY")
+    if api_key or model_name.startswith("groq:"):
+        try:
+            from langchain_groq import ChatGroq
+            clean_name = model_name.replace("groq:", "").strip() or "llama-3.3-70b-versatile"
+            return ChatGroq(
+                model_name=clean_name,
+                groq_api_key=api_key,
+                temperature=temperature,
+            )
+        except Exception:
+            pass
+
+    from langchain_ollama import ChatOllama
     num_threads = os.cpu_count() or 4
     return ChatOllama(
         model=model_name,
@@ -51,6 +64,7 @@ def generate_executive_summary(
     chunks: List[Document],
     model_name: str = "llama3.2:3b",
     temperature: float = 0.1,
+    groq_api_key: Optional[str] = None,
 ) -> str:
     """
     Generates a structured Executive Brief & TL;DR with key takeaways and metrics.
@@ -83,7 +97,7 @@ Format your output in clean Markdown:
 - [Actionable conclusions based on the text]"""
     )
 
-    llm = _get_fast_llm(model_name, temperature)
+    llm = _get_fast_llm(model_name, temperature, groq_api_key=groq_api_key)
     chain = prompt | llm
     response = chain.invoke({"context": context})
     return response.content
@@ -93,6 +107,7 @@ def generate_action_items_and_risks(
     chunks: List[Document],
     model_name: str = "llama3.2:3b",
     temperature: float = 0.1,
+    groq_api_key: Optional[str] = None,
 ) -> str:
     """
     Extracts action items, milestones, deadlines, and risk factors from the documents.
@@ -123,7 +138,7 @@ Format your response in Markdown:
 - **Risk 2:** Description"""
     )
 
-    llm = _get_fast_llm(model_name, temperature)
+    llm = _get_fast_llm(model_name, temperature, groq_api_key=groq_api_key)
     chain = prompt | llm
     response = chain.invoke({"context": context})
     return response.content
@@ -133,6 +148,7 @@ def generate_mind_map_mermaid(
     chunks: List[Document],
     model_name: str = "llama3.2:3b",
     temperature: float = 0.1,
+    groq_api_key: Optional[str] = None,
 ) -> str:
     """
     Generates an interactive Mermaid.js diagram representing document concepts and relationships.
@@ -161,7 +177,7 @@ graph TD
 ```"""
     )
 
-    llm = _get_fast_llm(model_name, temperature)
+    llm = _get_fast_llm(model_name, temperature, groq_api_key=groq_api_key)
     chain = prompt | llm
     content = chain.invoke({"context": context}).content.strip()
 
@@ -179,6 +195,7 @@ def generate_quiz_and_flashcards(
     chunks: List[Document],
     model_name: str = "llama3.2:3b",
     num_questions: int = 3,
+    groq_api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Generates interactive multiple-choice quiz questions with answer explanations.
@@ -205,7 +222,7 @@ Respond ONLY with a valid JSON array of objects with this schema:
 ]"""
     )
 
-    llm = _get_fast_llm(model_name, temperature=0.1)
+    llm = _get_fast_llm(model_name, temperature=0.1, groq_api_key=groq_api_key)
     chain = prompt | llm
     try:
         raw_output = chain.invoke({"context": context, "num_questions": num_questions}).content.strip()
@@ -238,6 +255,7 @@ Respond ONLY with a valid JSON array of objects with this schema:
 def generate_document_comparison(
     chunks: List[Document],
     model_name: str = "llama3.2:3b",
+    groq_api_key: Optional[str] = None,
 ) -> str:
     """
     Performs side-by-side comparative analysis of multiple uploaded documents.
@@ -273,7 +291,7 @@ Format your output in Markdown:
     doc1 = doc_names[0]
     doc2 = doc_names[1] if len(doc_names) > 1 else "Other Documents"
 
-    llm = _get_fast_llm(model_name, temperature=0.1)
+    llm = _get_fast_llm(model_name, temperature=0.1, groq_api_key=groq_api_key)
     chain = prompt | llm
     response = chain.invoke({
         "doc_names": ", ".join(doc_names),

@@ -38,7 +38,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ----------------- Custom Styling (Glassmorphism & Cyberpunk Elegance) -----------------
+# ----------------- Custom Styling -----------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -157,35 +157,23 @@ if "active_superpower" not in st.session_state:
 if "pending_query" not in st.session_state:
     st.session_state.pending_query = None
 
+# Check secrets or environment for Groq API key
+saved_groq_key = os.getenv("GROQ_API_KEY", "")
+try:
+    if not saved_groq_key and hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
+        saved_groq_key = st.secrets["GROQ_API_KEY"]
+except Exception:
+    pass
+
 # ----------------- Ollama Health Diagnostic -----------------
 ollama_alive, ollama_msg = check_ollama_status()
 installed_models_data = get_installed_models_detailed()
 installed_model_names = [m["name"] for m in installed_models_data] if installed_models_data else get_installed_model_names()
 
-# ----------------- Top Header Banner -----------------
-st.markdown(f"""
-<div class="hero-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div>
-            <div class="gradient-text">⚡ Supercharged AI Document Assistant</div>
-            <div style="color: #94a3b8; font-size: 0.95rem; margin-top: 4px;">
-                Ultra-Fast Hybrid RAG (BM25 + FAISS) with Deep Reasoning & Multi-Format Intelligence
-            </div>
-        </div>
-        <div>
-            <div class="status-badge {'offline' if not ollama_alive else ''}">
-                {'🟢 ' + ollama_msg if ollama_alive else '🔴 ' + ollama_msg}
-            </div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
 # ----------------- Sidebar Configuration -----------------
 with st.sidebar:
     st.markdown("### ⚡ Speed & Intelligence Presets")
     
-    # Speed Mode Quick Buttons
     speed_preset = st.radio(
         "Select Performance Profile:",
         options=[
@@ -202,38 +190,47 @@ with st.sidebar:
     st.markdown("1. **🎯 Embedding Model:** Embeds document text chunks into vectors.")
     st.markdown("2. **🧠 Chat / Reasoning Model:** Generates the streamed answers.")
 
-    # Auto-adjust model selection based on preset
-    default_model_choice = "llama3.2:3b" if "Turbo" in speed_preset else "deepseek-r1:8b"
-    if default_model_choice not in installed_model_names:
-        if "deepseek-r1:1.5b" in installed_model_names:
-            default_model_choice = "deepseek-r1:1.5b"
-        elif installed_model_names:
-            default_model_choice = installed_model_names[0]
+    # Check for Cloud Groq option
+    groq_api_key = saved_groq_key
+    cloud_models = ["groq:llama-3.3-70b-versatile", "groq:deepseek-r1-distill-llama-70b", "groq:llama-3.1-8b-instant"]
+
+    if not ollama_alive:
+        st.info("☁️ **Cloud Deployment Mode Active**")
+        groq_input = st.text_input(
+            "🔑 Free Groq API Key (from console.groq.com)",
+            value=saved_groq_key,
+            type="password",
+            help="Get 100% free high-speed cloud inference from console.groq.com (no credit card needed).",
+        )
+        if groq_input:
+            groq_api_key = groq_input
+
+        if groq_api_key:
+            installed_model_names = cloud_models
+            default_model_choice = "groq:llama-3.3-70b-versatile" if "Turbo" in speed_preset else "groq:deepseek-r1-distill-llama-70b"
+        else:
+            default_model_choice = "llama3.2:3b"
+    else:
+        default_model_choice = "llama3.2:3b" if "Turbo" in speed_preset else "deepseek-r1:8b"
+        if default_model_choice not in installed_model_names:
+            if "deepseek-r1:1.5b" in installed_model_names:
+                default_model_choice = "deepseek-r1:1.5b"
+            elif installed_model_names:
+                default_model_choice = installed_model_names[0]
 
     selected_model = st.selectbox(
         "🧠 Chat LLM Model",
         options=installed_model_names,
         index=installed_model_names.index(default_model_choice) if default_model_choice in installed_model_names else 0,
-        help="Select chat model. 'llama3.2:3b' or 'deepseek-r1:1.5b' gives near-instant responses. 'deepseek-r1:8b' gives deep reasoning.",
+        help="Select chat model for generation.",
     )
-
-    # Cloud Inference Option (for Hugging Face / Streamlit Cloud hosting)
-    groq_api_key = os.getenv("GROQ_API_KEY", "")
-    if not ollama_alive:
-        st.warning("⚠️ Local Ollama is offline. Using Free Cloud Inference fallback.")
-        groq_api_key = st.text_input("🔑 Free Groq API Key (from console.groq.com)", value=groq_api_key, type="password", help="100% Free API key for cloud hosting on Streamlit / Hugging Face Spaces.")
-        if groq_api_key:
-            cloud_models = ["groq:llama-3.3-70b-versatile", "groq:deepseek-r1-distill-llama-70b", "groq:llama-3.1-8b-instant"]
-            installed_model_names = cloud_models
-            selected_model = st.selectbox("🧠 Cloud LLM Model", options=cloud_models, index=0)
 
     embedding_model = st.text_input(
         "🎯 Embedding Model",
         value="nomic-embed-text",
-        help="Dense embedding model (e.g. nomic-embed-text, bge-m3, all-minilm).",
+        help="Dense embedding model (auto-switches to high-speed cloud embeddings if Ollama is offline).",
     )
 
-    # Retrieval Mode selector
     rag_mode = st.radio(
         "🚀 Retrieval Architecture",
         options=[
@@ -263,7 +260,6 @@ with st.sidebar:
         help="Upload files to build your local high-speed knowledge base.",
     )
 
-    # Ingestion handler with signature caching
     if uploaded_files:
         current_sig = tuple((f.name, f.size) for f in uploaded_files)
         if current_sig != st.session_state.processed_files_sig:
@@ -303,61 +299,54 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
-    # ----------------- Ollama Model Manager Section -----------------
-    st.markdown("---")
-    with st.expander("🛠️ Ollama Model Manager (Pull / Delete)"):
-        st.markdown("##### 📥 Pull SOTA Models")
-        recommended_pick = st.selectbox(
-            "Recommended Models",
-            options=list(RECOMMENDED_MODELS.keys()) + list(RECOMMENDED_EMBEDDING_MODELS.keys()),
-            help="Select one of the top tested models for document intelligence and reasoning.",
-        )
-        if recommended_pick in RECOMMENDED_MODELS:
-            rec = RECOMMENDED_MODELS[recommended_pick]
-            st.caption(f"**{rec['badge']}** • {rec['vram']}")
-            st.info(rec["description"])
-        
-        custom_pull_name = st.text_input("Model to Pull", value=recommended_pick)
-        if st.button("⬇️ Pull Model into Ollama", use_container_width=True):
-            if custom_pull_name:
-                pull_progress_bar = st.progress(0, text=f"Pulling '{custom_pull_name}'...")
-                pull_status_text = st.empty()
-                try:
-                    for status_chunk in pull_model_stream(custom_pull_name):
-                        status = status_chunk.get("status", "")
-                        total = status_chunk.get("total", 0)
-                        completed = status_chunk.get("completed", 0)
-                        if total > 0:
-                            pct = min(100, int((completed / total) * 100))
-                            pull_progress_bar.progress(pct, text=f"{status}: {pct}%")
-                        else:
-                            pull_status_text.caption(f"Status: {status}")
-                    pull_progress_bar.progress(100, text=f"✅ '{custom_pull_name}' successfully downloaded!")
-                    st.success(f"Model '{custom_pull_name}' is ready to use!")
-                    time.sleep(1)
-                    st.rerun()
-                except Exception as p_err:
-                    st.error(f"Failed to pull model: {str(p_err)}")
-
-        st.markdown("##### 🗑️ Delete Previous / Unused Models")
-        if installed_models_data:
-            model_to_delete = st.selectbox(
-                "Select model to delete (frees disk space)",
-                options=[m["name"] for m in installed_models_data],
-                key="delete_model_select"
+    # ----------------- Ollama Model Manager Section (Local only) -----------------
+    if ollama_alive:
+        st.markdown("---")
+        with st.expander("🛠️ Ollama Model Manager (Pull / Delete)"):
+            st.markdown("##### 📥 Pull SOTA Models")
+            recommended_pick = st.selectbox(
+                "Recommended Models",
+                options=list(RECOMMENDED_MODELS.keys()) + list(RECOMMENDED_EMBEDDING_MODELS.keys()),
             )
-            del_size = next((m["size_str"] for m in installed_models_data if m["name"] == model_to_delete), "Unknown")
-            st.caption(f"Disk space to reclaim: **{del_size}**")
-            if st.button(f"🗑️ Delete '{model_to_delete}'", type="primary", use_container_width=True):
-                success, del_msg = delete_model(model_to_delete)
-                if success:
-                    st.success(del_msg)
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(del_msg)
-        else:
-            st.caption("No installed models found or Ollama is offline.")
+            custom_pull_name = st.text_input("Model to Pull", value=recommended_pick)
+            if st.button("⬇️ Pull Model into Ollama", use_container_width=True):
+                if custom_pull_name:
+                    pull_progress_bar = st.progress(0, text=f"Pulling '{custom_pull_name}'...")
+                    pull_status_text = st.empty()
+                    try:
+                        for status_chunk in pull_model_stream(custom_pull_name):
+                            status = status_chunk.get("status", "")
+                            total = status_chunk.get("total", 0)
+                            completed = status_chunk.get("completed", 0)
+                            if total > 0:
+                                pct = min(100, int((completed / total) * 100))
+                                pull_progress_bar.progress(pct, text=f"{status}: {pct}%")
+                            else:
+                                pull_status_text.caption(f"Status: {status}")
+                        pull_progress_bar.progress(100, text=f"✅ '{custom_pull_name}' successfully downloaded!")
+                        st.success(f"Model '{custom_pull_name}' is ready to use!")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as p_err:
+                        st.error(f"Failed to pull model: {str(p_err)}")
+
+            st.markdown("##### 🗑️ Delete Previous / Unused Models")
+            if installed_models_data:
+                model_to_delete = st.selectbox(
+                    "Select model to delete",
+                    options=[m["name"] for m in installed_models_data],
+                    key="delete_model_select"
+                )
+                del_size = next((m["size_str"] for m in installed_models_data if m["name"] == model_to_delete), "Unknown")
+                st.caption(f"Disk space to reclaim: **{del_size}**")
+                if st.button(f"🗑️ Delete '{model_to_delete}'", type="primary", use_container_width=True):
+                    success, del_msg = delete_model(model_to_delete)
+                    if success:
+                        st.success(del_msg)
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(del_msg)
 
     st.markdown("---")
     col_c1, col_c2 = st.columns(2)
@@ -380,6 +369,32 @@ with st.sidebar:
             st.session_state.loaded_file_names = []
             st.session_state.active_superpower = None
             st.rerun()
+
+
+# ----------------- Top Header Banner -----------------
+# Determine display status
+if ollama_alive:
+    badge_html = '<div class="status-badge">🟢 Ollama Live: Port 11434</div>'
+elif groq_api_key:
+    badge_html = '<div class="status-badge">🟢 Cloud AI Connected (Groq SOTA)</div>'
+else:
+    badge_html = '<div class="status-badge offline">🔴 Offline: Enter Free Groq Key in Sidebar</div>'
+
+st.markdown(f"""
+<div class="hero-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div class="gradient-text">⚡ Supercharged AI Document Assistant</div>
+            <div style="color: #94a3b8; font-size: 0.95rem; margin-top: 4px;">
+                Ultra-Fast Hybrid RAG (BM25 + FAISS) with Deep Reasoning & Multi-Format Intelligence
+            </div>
+        </div>
+        <div>
+            {badge_html}
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ----------------- Document Superpowers Toolbar -----------------
@@ -424,21 +439,21 @@ if st.session_state.active_superpower:
         st.markdown("---")
         if st.session_state.active_superpower == "summary":
             with st.spinner("Generating Executive Brief & Takeaways..."):
-                summary_md = generate_executive_summary(st.session_state.all_chunks, model_name=selected_model)
+                summary_md = generate_executive_summary(st.session_state.all_chunks, model_name=selected_model, groq_api_key=groq_api_key)
                 st.markdown(summary_md)
         elif st.session_state.active_superpower == "actions":
             with st.spinner("Extracting Action Items, Deadlines & Risks..."):
-                actions_md = generate_action_items_and_risks(st.session_state.all_chunks, model_name=selected_model)
+                actions_md = generate_action_items_and_risks(st.session_state.all_chunks, model_name=selected_model, groq_api_key=groq_api_key)
                 st.markdown(actions_md)
         elif st.session_state.active_superpower == "mindmap":
             with st.spinner("Synthesizing Visual Knowledge Mind Map..."):
-                mermaid_code = generate_mind_map_mermaid(st.session_state.all_chunks, model_name=selected_model)
+                mermaid_code = generate_mind_map_mermaid(st.session_state.all_chunks, model_name=selected_model, groq_api_key=groq_api_key)
                 st.markdown("### 🔍 Document Concept Knowledge Graph")
                 st.caption("Visual representation of key interconnected entities and concepts:")
                 st.markdown(f"```mermaid\n{mermaid_code}\n```")
         elif st.session_state.active_superpower == "quiz":
             with st.spinner("Generating AI Comprehension Quiz..."):
-                quiz_items = generate_quiz_and_flashcards(st.session_state.all_chunks, model_name=selected_model)
+                quiz_items = generate_quiz_and_flashcards(st.session_state.all_chunks, model_name=selected_model, groq_api_key=groq_api_key)
                 st.markdown("### ❓ AI Document Comprehension Quiz")
                 for q in quiz_items:
                     st.markdown(f"**Q{q.get('id', 1)}: {q.get('question', '')}**")
@@ -454,7 +469,7 @@ if st.session_state.active_superpower:
                     st.markdown("---")
         elif st.session_state.active_superpower == "compare":
             with st.spinner("Performing Cross-Document Comparative Intelligence..."):
-                compare_md = generate_document_comparison(st.session_state.all_chunks, model_name=selected_model)
+                compare_md = generate_document_comparison(st.session_state.all_chunks, model_name=selected_model, groq_api_key=groq_api_key)
                 st.markdown(compare_md)
 
         if st.button("✖️ Close Analysis Panel"):
@@ -466,7 +481,6 @@ if st.session_state.active_superpower:
 # ----------------- Chat Interface & Workspace -----------------
 st.markdown("#### 💬 Conversational Intelligence")
 
-# If no messages yet, show interactive Hero prompt starters
 if not st.session_state.messages:
     if st.session_state.loaded_file_names:
         st.markdown("##### 💡 Suggested Questions to Explore:")
@@ -588,7 +602,7 @@ if user_input:
                         "tokens_per_sec": event.get("tokens_per_sec", 0),
                     }
                 elif event_type == "error":
-                    st.error(f"❌ **Ollama Error:** {event.get('error')}\n\nMake sure Ollama is running (`ollama serve`).")
+                    st.error(f"❌ **Inference Error:** {event.get('error')}\n\nMake sure Ollama is running or a valid Free Groq API Key is entered.")
 
             if accumulated_think and show_thinking:
                 think_placeholder.markdown(
@@ -621,7 +635,6 @@ if user_input:
                         </div>
                         """, unsafe_allow_html=True)
 
-            # Instant zero-latency follow-up questions
             followup_questions = generate_smart_followups(user_input, accumulated_answer)
 
         st.session_state.messages.append({
